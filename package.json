@@ -2,32 +2,19 @@
   "name": "michael-unanka",
   "type": "module",
   "version": "1.0.0",
-  "description": "",
+  "description": "\"\"",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js",
-    "server": "nodemon server.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/itdev161-fa2026/michael-unanka.git"
   },
-  "author": "michael unanka",
+  "author": "",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/itdev161-fa2026/michael-unanka/issues"
   },
-  "homepage": "https://github.com/itdev161-fa2026/michael-unanka#readme",
-  "dependencies": {
-    "bcryptjs": "^3.0.2",
-    "config": "^4.1.1",
-    "express": "^5.1.0",
-    "express-validator": "^7.2.1",
-    "mongoose": "^8.18.0"
-  },
-  "devDependencies": {
-    "concurrently": "^9.2.1",
-    "nodemon": "^3.1.10"
-  }
+  "homepage": "https://github.com/itdev161-fa2026/michael-unanka#readme"
 }
