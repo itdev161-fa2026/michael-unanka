@@ -2,16 +2,16 @@ import mongoose from 'mongoose';
 import config from 'config';
 
 //get the connection string
-const db = config.get('mongoURI');
+
 
 // connect to MongoDB
 const connectDatabase = async () => {
+    const db = config.get('mongoURI');
     try {
         await mongoose.connect(db);
         console. log('connected to MongoDB');
     } catch (error) {
-        console.error(error.message);
-
+        console.error('MongoDB Connection error:', error.message);
         // Exit with failure code
         process.exit(1);
     }
