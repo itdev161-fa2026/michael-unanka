@@ -1,0 +1,3 @@
+{
+  "mongoURI": "mongodb+srv://<unanka_db_user>:<Testing123>@cluster0.ziwhink.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0/"
+}
