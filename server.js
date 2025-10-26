@@ -2,24 +2,29 @@ const express = require("express");
 const connectDatabase = require("./config/db");
 const { check, validationResult } = require("express-validator");
 const User = require("./models/User");
-const Post = require("./models/Post");   // ✅ Post model
+const Post = require("./models/Post"); // ✅ Post model
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
-const auth = require("./middleware/auth");  // ✅ Auth middleware
+const auth = require("./middleware/auth"); // ✅ Auth middleware
+const cors = require("cors"); // ✅ Added CORS
 
-
+// ✅ Load environment variables
 dotenv.config();
+
+// ✅ Initialize express FIRST
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-// Middleware to parse JSON
-app.use(express.json());
+// ✅ Enable CORS after creating app
+app.use(cors());
 
-// Connect Database
+// ✅ Middleware to parse JSON
+app.use(express.json({ extended: false }));
+
+// ✅ Connect Database
 connectDatabase();
 
-// Test route
+// ✅ Test route
 app.get("/", (req, res) => {
   res.send("API Running");
 });
@@ -50,34 +55,29 @@ app.post(
     const { name, email, password } = req.body;
 
     try {
-      // Check if user exists
       let user = await User.findOne({ email });
       if (user) {
         return res.status(400).json({ msg: "User already exists" });
       }
 
-      // Create new user
-      user = new User({
-        name,
-        email,
-        password,
-      });
+      user = new User({ name, email, password });
 
-      // Hash password
       const salt = await bcrypt.genSalt(10);
       user.password = await bcrypt.hash(password, salt);
 
       await user.save();
 
-      // Return JWT
-      const payload = {
-        user: { id: user.id },
-      };
+      const payload = { user: { id: user.id } };
 
-      jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" }, (err, token) => {
-        if (err) throw err;
-        res.json({ token });
-      });
+      jwt.sign(
+        payload,
+        process.env.JWT_SECRET,
+        { expiresIn: "1h" },
+        (err, token) => {
+          if (err) throw err;
+          res.json({ token });
+        }
+      );
     } catch (err) {
       console.error(err.message);
       res.status(500).send("Server error");
@@ -102,27 +102,27 @@ app.post(
     const { email, password } = req.body;
 
     try {
-      // Find user
       let user = await User.findOne({ email });
       if (!user) {
         return res.status(400).json({ msg: "Invalid credentials" });
       }
 
-      // Check password
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) {
         return res.status(400).json({ msg: "Invalid credentials" });
       }
 
-      // Return JWT
-      const payload = {
-        user: { id: user.id },
-      };
+      const payload = { user: { id: user.id } };
 
-      jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" }, (err, token) => {
-        if (err) throw err;
-        res.json({ token });
-      });
+      jwt.sign(
+        payload,
+        process.env.JWT_SECRET,
+        { expiresIn: "1h" },
+        (err, token) => {
+          if (err) throw err;
+          res.json({ token });
+        }
+      );
     } catch (err) {
       console.error(err.message);
       res.status(500).send("Server error");
@@ -280,4 +280,5 @@ app.delete("/api/posts/:id", auth, async (req, res) => {
  * START SERVER
  * ========================
  */
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
