@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/itdev161-fa2026/michael-unanka#readme",
   "dependencies": {
+    "cors": "^2.8.5",
     "express": "^5.1.0",
     "express-validator": "^7.2.1",
     "mongoose": "^8.18.1"
