@@ -1,24 +1,62 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './context/AuthProvider';
-import Header from './components/Header';
-import Home from './pages/Home';
-import PostDetail from './pages/PostDetail';
-import RegisterPage from './pages/RegisterPage';
-import LoginPage from './pages/LoginPage';
-import './App.css';
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./context/AuthProvider";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Header from "./components/Header";
+import Home from "./pages/Home";
+import PostDetail from "./pages/PostDetail";
+import RegisterPage from "./pages/RegisterPage";
+import LoginPage from "./pages/LoginPage";
+import CreatePost from "./pages/CreatePost";
+import EditPost from "./pages/EditPost";
+import "./App.css";
 
 function App() {
+  console.log("✅ App loaded");
+
   return (
     <AuthProvider>
       <Router>
-        <div className="App">
+        <div className="App" style={{ minHeight: "100vh", background: "#f9f9f9" }}>
           <Header />
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/posts/:id" element={<PostDetail />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/login" element={<LoginPage />} />
-          </Routes>
+          <main style={{ padding: "2rem" }}>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<Home />} />
+              <Route path="/posts/:id" element={<PostDetail />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/login" element={<LoginPage />} />
+
+              {/* Protected Routes */}
+              <Route
+                path="/posts/create"
+                element={
+                  <ProtectedRoute>
+                    <CreatePost />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/posts/:id/edit"
+                element={
+                  <ProtectedRoute>
+                    <EditPost />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Fallback route for any unknown paths */}
+              <Route
+                path="*"
+                element={
+                  <div style={{ textAlign: "center", marginTop: "4rem" }}>
+                    <h2>404 – Page Not Found</h2>
+                    <p>The page you’re looking for doesn’t exist.</p>
+                  </div>
+                }
+              />
+            </Routes>
+          </main>
         </div>
       </Router>
     </AuthProvider>
