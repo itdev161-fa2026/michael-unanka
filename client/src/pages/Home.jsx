@@ -1,12 +1,14 @@
-import { useState, useEffect } from 'react';
-import PostCard from "../components/PostCard.jsx";
+import { useState, useEffect, useContext } from 'react';
+import PostCard from '../components/PostCard';
 import { getPosts } from '../services/api';
+import { AuthContext } from '../context/authContext';
 import './Home.css';
 
 const Home = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { user } = useContext(AuthContext);
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -16,7 +18,9 @@ const Home = () => {
         setPosts(data);
         setError(null);
       } catch (err) {
-        setError('Failed to load posts. Make sure the backend server is running.');
+        setError(
+          'Failed to load posts. Make sure the backend server is running.'
+        );
         console.error(err);
       } finally {
         setLoading(false);
@@ -38,7 +42,16 @@ const Home = () => {
     <div className="container">
       <div className="home-header">
         <h1>Recent Posts</h1>
-        {/* Create Post button will be added in Activity 9 */}
+        {user ? (
+          <p className="auth-message">
+            Welcome back! Create Post button will be added in Activity 9.
+          </p>
+        ) : (
+          <p className="auth-message">
+            <a href="/login">Login</a> or <a href="/register">register</a> to
+            create posts.
+          </p>
+        )}
       </div>
       {posts.length === 0 ? (
         <div className="no-posts">
@@ -56,3 +69,4 @@ const Home = () => {
 };
 
 export default Home;
+
