@@ -1,97 +1,84 @@
-import { useState } from 'react';
-import './Login.css';
+import { useContext, useEffect, useState } from 'react';
+import toast from "react-hot-toast";
+import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/authContext';
+import { loginUser } from '../services/api';
 
-const Login = ({ onLogin, error: authError }) => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
-  const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
+const LoginPage = () => {
+  const { login, user } = useContext(AuthContext);
+  const navigate = useNavigate();
 
-  const { email, password } = formData;
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const onChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    // Clear error for this field when user starts typing
-    if (errors[e.target.name]) {
-      setErrors({ ...errors, [e.target.name]: '' });
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (user) {
+      toast.success("You're already logged in!");
+      navigate('/');
     }
-  };
+  }, [user, navigate]);
 
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Email is invalid';
-    }
-
-    if (!password) {
-      newErrors.password = 'Password is required';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const onSubmit = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
 
-    if (!validateForm()) {
-      return;
-    }
+    try {
+      // Call backend login
+      const result = await loginUser(email, password);
 
-    setLoading(true);
-    await onLogin(email, password);
-    setLoading(false);
+      if (result.token) {
+        // Save token + user
+        localStorage.setItem("token", result.token);
+        localStorage.setItem("user", JSON.stringify(result.user));
+
+        // Update global context
+        login(result.user);
+
+        toast.success("Logged in successfully!");
+        navigate('/');
+      } else {
+        toast.error("Invalid email or password.");
+      }
+
+    } catch (err) {
+      console.error("Login error:", err);
+      toast.error("Login failed. Please try again.");
+    }
   };
 
   return (
-    <div className="login-form">
-      <h2>Welcome Back</h2>
-      <p className="login-subtitle">Login to your account</p>
+    <div className="login-container">
+      <h2>Login</h2>
 
-      {authError && <div className="error-message">{authError}</div>}
+      <form onSubmit={handleLogin} className="login-form">
 
-      <form onSubmit={onSubmit}>
-        <div className="form-group">
-          <label htmlFor="email">Email</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={email}
-            onChange={onChange}
-            placeholder="Enter your email"
-            className={errors.email ? 'input-error' : ''}
-          />
-          {errors.email && <span className="field-error">{errors.email}</span>}
-        </div>
+        <label>Email</label>
+        <input
+          type="email"
+          value={email}
+          placeholder="Enter email"
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
 
-        <div className="form-group">
-          <label htmlFor="password">Password</label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            value={password}
-            onChange={onChange}
-            placeholder="Enter your password"
-            className={errors.password ? 'input-error' : ''}
-          />
-          {errors.password && (
-            <span className="field-error">{errors.password}</span>
-          )}
-        </div>
+        <label>Password</label>
+        <input
+          type="password"
+          value={password}
+          placeholder="Enter password"
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
 
-        <button type="submit" className="submit-button" disabled={loading}>
-          {loading ? 'Logging in...' : 'Login'}
+        <button type="submit" className="login-btn">
+          Login
         </button>
+
       </form>
     </div>
   );
 };
 
-export default Login;
+export default LoginPage;
+
+

@@ -1,0 +1,70 @@
+.edit-wrapper {
+  display: flex;
+  justify-content: center;
+  padding-top: 2rem;
+  padding-bottom: 4rem;
+}
+
+.edit-card {
+  width: 100%;
+  max-width: 700px;
+  background: #ffffff;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.edit-card h1 {
+  font-size: 2.2rem;
+  margin-bottom: 1.5rem;
+  color: #222;
+  font-weight: 700;
+}
+
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.edit-form label {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.edit-form input,
+.edit-form textarea {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  outline: none;
+  background: #fafafa;
+}
+
+.edit-form input:focus,
+.edit-form textarea:focus {
+  border-color: #61dafb;
+  background: #ffffff;
+  box-shadow: 0 0 0 2px rgba(97,218,251,0.3);
+}
+
+.save-btn {
+  background: #61dafb;
+  color: #000;
+  font-size: 1.1rem;
+  font-weight: 600;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s ease;
+  margin-top: 1rem;
+}
+
+.save-btn:hover {
+  background: #21a1c4;
+  color: white;
+}

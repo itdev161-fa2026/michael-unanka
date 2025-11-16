@@ -1,124 +1,69 @@
-import { useState, useEffect } from 'react';
-import { jwtDecode } from 'jwt-decode';
-import { registerUser as registerUserAPI, loginUser as loginUserAPI } from '../services/api';
-import { AuthContext } from './authContext';
+// client/src/context/AuthProvider.jsx
+import { useState, useEffect } from "react";
+import { jwtDecode } from "jwt-decode";
+import { AuthContext } from "./authContext";
+import { registerUser as registerAPI, loginUser as loginAPI } from "../services/api";
 
-// AuthProvider component to wrap the app
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);      // { id, name }
-  const [token, setToken] = useState(null);    // raw JWT
+  const [user, setUser] = useState(null);         // { _id, name, email }
+  const [token, setToken] = useState(null);       // auth token
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);    // auth-related error messages
 
-  // Check for existing token on app load
+  // Load local token on app start
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-
+    const storedToken = localStorage.getItem("token");
     if (storedToken) {
       try {
-        // Decode token to get user info
         const decoded = jwtDecode(storedToken);
 
-        // Check if token is expired
         if (decoded.exp * 1000 < Date.now()) {
-          // Token expired, clear it
-          localStorage.removeItem('token');
-          setLoading(false);
+          localStorage.removeItem("token");
         } else {
-          // Token valid, set user and token
           setToken(storedToken);
-          setUser(decoded.user); // { id, name }
-          setLoading(false);
+          setUser(decoded.user);
         }
       } catch (err) {
-        console.error('Error decoding token:', err);
-        localStorage.removeItem('token');
-        setLoading(false);
+        console.error("Invalid token:", err);
+        localStorage.removeItem("token");
       }
-    } else {
-      setLoading(false);
     }
+    setLoading(false);
   }, []);
 
-  // Register function
+  // REGISTER
   const register = async (name, email, password) => {
-    try {
-      setError(null);
-      setLoading(true);
+    const data = await registerAPI(name, email, password);
 
-      // Call API to register user
-      const data = await registerUserAPI(name, email, password);
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
 
-      // Store token in localStorage
-      localStorage.setItem('token', data.token);
+    setToken(data.token);
+    setUser(data.user);
 
-      // Decode token to get user info
-      const decoded = jwtDecode(data.token);
-
-      // Update state
-      setToken(data.token);
-      setUser(decoded.user);
-      setLoading(false);
-
-      return { success: true };
-    } catch (err) {
-      const errorMsg = err.response?.data?.errors?.[0]?.msg || 'Registration failed';
-      setError(errorMsg);
-      setLoading(false);
-      return { success: false, error: errorMsg };
-    }
+    return data;
   };
 
-  // Login function
-  const login = async (email, password) => {
-    try {
-      setError(null);
-      setLoading(true);
+  // LOGIN
+  const login = (userObj, tokenStr) => {
+    localStorage.setItem("token", tokenStr);
+    localStorage.setItem("user", JSON.stringify(userObj));
 
-      // Call API to login user
-      const data = await loginUserAPI(email, password);
-
-      // Store token in localStorage
-      localStorage.setItem('token', data.token);
-
-      // Decode token to get user info
-      const decoded = jwtDecode(data.token);
-
-      // Update state
-      setToken(data.token);
-      setUser(decoded.user);
-      setLoading(false);
-
-      return { success: true };
-    } catch (err) {
-      const errorMsg = err.response?.data?.errors?.[0]?.msg || 'Login failed';
-      setError(errorMsg);
-      setLoading(false);
-      return { success: false, error: errorMsg };
-    }
+    setToken(tokenStr);
+    setUser(userObj);
   };
 
-  // Logout function
+  // LOGOUT
   const logout = () => {
-    // Remove token from localStorage
-    localStorage.removeItem('token');
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
 
-    // Clear state
     setToken(null);
     setUser(null);
-    setError(null);
   };
 
-  // Context value to provide
-  const value = {
-    user,
-    token,
-    loading,
-    error,
-    register,
-    login,
-    logout,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, token, login, logout, register, loading }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };

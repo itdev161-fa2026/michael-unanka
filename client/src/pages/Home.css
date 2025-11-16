@@ -1,9 +1,16 @@
+/* ===========================
+   MAIN CONTAINER
+=========================== */
 .container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+  font-family: "Inter", sans-serif;
 }
 
+/* ===========================
+   HEADER
+=========================== */
 .home-header {
   margin-bottom: 2rem;
 }
@@ -12,12 +19,15 @@
   color: #282c34;
   margin: 0;
   margin-bottom: 0.5rem;
+  font-size: 32px;
+  font-weight: 700;
 }
 
 .auth-message {
   color: #666;
   font-size: 1rem;
   margin: 0;
+  line-height: 1.4;
 }
 
 .auth-message a {
@@ -30,6 +40,54 @@
   text-decoration: underline;
 }
 
+/* ===========================
+   SEARCH + CREATE ROW
+=========================== */
+.search-create-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.2rem;
+}
+
+/* Search Input */
+.search-input {
+  flex: 1; 
+  padding: 10px 14px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background-color: white;
+  font-size: 16px;
+  color: black;
+  transition: all 0.2s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #61dafb;
+  box-shadow: 0 0 4px rgba(97, 218, 251, 0.4);
+}
+
+/* Create Post button */
+.create-post-btn {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 18px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
+  transition: 0.2s ease;
+  white-space: nowrap;
+}
+
+.create-post-btn:hover {
+  background-color: #45a049;
+}
+
+/* ===========================
+   STATUS MESSAGES
+=========================== */
 .loading,
 .error {
   text-align: center;
@@ -45,10 +103,68 @@
   text-align: center;
   margin-top: 3rem;
   color: #666;
+  font-size: 18px;
 }
 
+/* ===========================
+   POSTS LIST
+=========================== */
 .posts-list {
   display: flex;
   flex-direction: column;
+  gap: 1.6rem;
+  margin-top: 1rem;
 }
 
+/* ===========================
+   PAGINATION
+=========================== */
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 30px;
+  font-size: 1rem;
+  color: #333;
+}
+
+.pagination button {
+  padding: 8px 14px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  background: #f9f9f9;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.pagination button:hover:not(:disabled) {
+  background-color: #61dafb;
+  color: white;
+  border-color: #61dafb;
+}
+
+.pagination button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pagination span {
+  flex: 1;
+  text-align: center;
+}
+
+/* ===========================
+   RESPONSIVE DESIGN
+=========================== */
+@media (max-width: 768px) {
+  .search-create-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .create-post-btn {
+    width: 100%;
+    text-align: center;
+  }
+}
