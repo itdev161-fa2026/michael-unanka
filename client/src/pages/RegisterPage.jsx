@@ -1,3 +1,4 @@
+import toast from "react-hot-toast";
 import { useContext, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/authContext';

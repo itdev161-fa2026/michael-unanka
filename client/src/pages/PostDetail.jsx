@@ -1,75 +1,92 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { getPostById } from '../services/api';
-import './PostDetail.css';
+// client/src/pages/PostDetail.jsx
+import toast from "react-hot-toast";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { getPostById, deletePost } from "../services/api";
+import { formatDistanceToNow, format } from "date-fns";
+import CommentSection from "../components/CommentSection"; // ⭐ REQUIRED
+
+import "./PostDetail.css";
 
 const PostDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+
+  const user = JSON.parse(localStorage.getItem("user"));
 
   useEffect(() => {
-    const fetchPost = async () => {
+    const loadPost = async () => {
       try {
-        setLoading(true);
         const data = await getPostById(id);
         setPost(data);
-        setError(null);
       } catch (err) {
-        setError('Failed to load post. It may not exist or the server is down.');
-        console.error(err);
+        toast.error("Failed to load post");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPost();
+    loadPost();
   }, [id]);
 
-  const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
+  const handleDelete = async () => {
+    try {
+      await deletePost(id);
+      toast.success("Post deleted!");
+      navigate("/");
+    } catch (err) {
+      toast.error("Delete failed");
+    }
   };
 
-  if (loading) {
-    return <div className="container loading">Loading post...</div>;
-  }
+  if (loading) return <div className="post-detail">Loading…</div>;
+  if (!post) return <div className="post-detail">Post not found</div>;
 
-  if (error) {
-    return (
-      <div className="container error">
-        <p>{error}</p>
-        <button onClick={() => navigate('/')} className="back-button">
-          ← Back to Home
-        </button>
-      </div>
-    );
-  }
-
-  if (!post) {
-    return <div className="container error">Post not found.</div>;
-  }
+  const isOwner = user?._id === post.user?._id;
 
   return (
-    <div className="container">
-      <button onClick={() => navigate('/')} className="back-button">
-        ← Back to Posts
+    <div className="post-detail">
+      {/* Back Button */}
+      <button className="back-button" onClick={() => navigate(-1)}>
+        ← Back
       </button>
-      <article className="post-detail">
-        <h1>{post.title}</h1>
-        <div className="post-detail-meta">
-          <span className="post-detail-author">By {post.user?.name || 'Unknown'}</span>
-          <span className="post-detail-date">{formatDate(post.createDate)}</span>
+
+      {/* Title */}
+      <h1>{post.title}</h1>
+
+      {/* Meta */}
+      <div className="post-detail-meta">
+        <span>
+          ⏱{" "}
+          {formatDistanceToNow(new Date(post.createdAt), {
+            addSuffix: true,
+          })}
+        </span>
+        <span>📅 {format(new Date(post.createdAt), "MMMM do, yyyy")}</span>
+        <span>✍️ {post.user?.name}</span>
+      </div>
+
+      {/* Body */}
+      <p className="post-detail-body">{post.body}</p>
+
+      {/* Edit/Delete Buttons */}
+      {isOwner && (
+        <div className="post-actions">
+          <Link to={`/posts/${id}/edit`}>
+            <button className="edit-button">Edit</button>
+          </Link>
+
+          <button className="delete-button" onClick={handleDelete}>
+            Delete
+          </button>
         </div>
-        <div className="post-detail-body">
-          {post.body.split('\n').map((paragraph, index) => (
-            <p key={index}>{paragraph}</p>
-          ))}
-        </div>
-        {/* Edit and Delete buttons will be added in Activity 9 */}
-      </article>
+      )}
+
+      {/* ⭐ COMMENT SECTION ⭐ */}
+      <CommentSection postId={id} currentUser={user} />
     </div>
   );
 };

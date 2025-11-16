@@ -20,6 +20,14 @@ const Header = () => {
           <Link to="/" className="nav-link">
             Home
           </Link>
+
+          {/* ⭐ SHOW CREATE POST ONLY IF LOGGED IN */}
+          {user && (
+            <Link to="/create-post" className="nav-link create-post-btn">
+              Create Post
+            </Link>
+          )}
+
           {user ? (
             <>
               <span className="user-welcome">
@@ -46,4 +54,3 @@ const Header = () => {
 };
 
 export default Header;
-

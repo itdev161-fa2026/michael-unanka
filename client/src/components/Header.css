@@ -63,3 +63,16 @@
   background-color: white;
   color: #282c34;
 }
+
+.create-post-btn {
+  background-color: #3498db;
+  color: #fff !important;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: 0.25s;
+}
+
+.create-post-btn:hover {
+  background-color: #217dbb;
+}

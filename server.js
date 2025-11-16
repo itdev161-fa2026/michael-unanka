@@ -1,143 +1,134 @@
+// server.js
 const express = require("express");
 const connectDatabase = require("./config/db");
 const { check, validationResult } = require("express-validator");
 const User = require("./models/User");
-const Post = require("./models/Post"); // ✅ Post model
+const Post = require("./models/Post");
+const Comment = require("./models/Comment");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
-const auth = require("./middleware/auth"); // ✅ Auth middleware
-const cors = require("cors"); // ✅ Added CORS
+const auth = require("./middleware/auth");
+const cors = require("cors");
 
-// ✅ Load environment variables
 dotenv.config();
 
-// ✅ Initialize express FIRST
 const app = express();
 
-// ✅ Enable CORS after creating app
-app.use(cors());
+/* ============================================================
+   SAFARI / AXIOS CORS FIX — DO NOT CHANGE ANYTHING HERE
+============================================================ */
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-auth-token"],
+    exposedHeaders: ["x-auth-token"],
+    credentials: true,
+  })
+);
 
-// ✅ Middleware to parse JSON
 app.use(express.json({ extended: false }));
 
-// ✅ Connect Database
+// Connect to MongoDB
 connectDatabase();
 
-// ✅ Test route
-app.get("/", (req, res) => {
-  res.send("API Running");
-});
+// ================================
+// ROOT ROUTE
+// ================================
+app.get("/", (req, res) => res.send("API Running"));
 
-/**
- * ========================
- * AUTH ROUTES (Register/Login)
- * ========================
- */
-
-// @route   POST api/users
-// @desc    Register user
+/* ================================
+   REGISTER USER
+================================ */
 app.post(
   "/api/users",
   [
-    check("name", "Name is required").not().isEmpty(),
-    check("email", "Please include a valid email").isEmail(),
-    check("password", "Please enter a password with 6+ characters").isLength({
-      min: 6,
-    }),
+    check("name", "Name is required").notEmpty(),
+    check("email", "Valid email required").isEmail(),
+    check("password", "Min 6 chars").isLength({ min: 6 }),
   ],
   async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) {
+    if (!errors.isEmpty())
       return res.status(400).json({ errors: errors.array() });
-    }
 
     const { name, email, password } = req.body;
 
     try {
       let user = await User.findOne({ email });
-      if (user) {
-        return res.status(400).json({ msg: "User already exists" });
-      }
+      if (user) return res.status(400).json({ msg: "User exists" });
 
-      user = new User({ name, email, password });
+      const hash = await bcrypt.hash(password, 10);
 
-      const salt = await bcrypt.genSalt(10);
-      user.password = await bcrypt.hash(password, salt);
-
+      user = new User({ name, email, password: hash });
       await user.save();
 
-      const payload = { user: { id: user.id } };
+      const payload = { user: { id: user._id } };
 
-      jwt.sign(
-        payload,
-        process.env.JWT_SECRET,
-        { expiresIn: "1h" },
-        (err, token) => {
-          if (err) throw err;
-          res.json({ token });
-        }
-      );
+      jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" }, (err, token) => {
+        if (err) throw err;
+        res.json({
+          token,
+          user: {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+          },
+        });
+      });
     } catch (err) {
-      console.error(err.message);
       res.status(500).send("Server error");
     }
   }
 );
 
-// @route   POST api/auth
-// @desc    Authenticate user & get token
+/* ================================
+   LOGIN USER
+================================ */
 app.post(
   "/api/auth",
   [
-    check("email", "Please include a valid email").isEmail(),
-    check("password", "Password is required").exists(),
+    check("email", "Valid email required").isEmail(),
+    check("password", "Password required").exists(),
   ],
   async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) {
+    if (!errors.isEmpty())
       return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { email, password } = req.body;
 
     try {
-      let user = await User.findOne({ email });
-      if (!user) {
-        return res.status(400).json({ msg: "Invalid credentials" });
-      }
+      const { email, password } = req.body;
 
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) {
-        return res.status(400).json({ msg: "Invalid credentials" });
-      }
+      const user = await User.findOne({ email });
+      if (!user) return res.status(400).json({ msg: "Invalid credentials" });
 
-      const payload = { user: { id: user.id } };
+      const valid = await bcrypt.compare(password, user.password);
+      if (!valid) return res.status(400).json({ msg: "Invalid credentials" });
 
-      jwt.sign(
-        payload,
-        process.env.JWT_SECRET,
-        { expiresIn: "1h" },
-        (err, token) => {
-          if (err) throw err;
-          res.json({ token });
-        }
-      );
+      const payload = { user: { id: user._id } };
+
+      jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" }, (err, token) => {
+        if (err) throw err;
+
+        res.json({
+          token,
+          user: {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+          },
+        });
+      });
     } catch (err) {
-      console.error(err.message);
       res.status(500).send("Server error");
     }
   }
 );
 
-/**
- * ========================
- * POST ROUTES (CRUD)
- * ========================
- */
-
-// @route   GET api/posts
-// @desc    Get all posts
+/* ================================
+   GET ALL POSTS
+================================ */
 app.get("/api/posts", async (req, res) => {
   try {
     const posts = await Post.find()
@@ -145,140 +136,188 @@ app.get("/api/posts", async (req, res) => {
       .sort({ createdAt: -1 });
 
     res.json(posts);
-  } catch (error) {
-    console.error(error.message);
+  } catch (err) {
     res.status(500).send("Server error");
   }
 });
 
-// @route   GET api/posts/:id
-// @desc    Get single post
+/* ================================
+   GET SINGLE POST
+================================ */
 app.get("/api/posts/:id", async (req, res) => {
   try {
     const post = await Post.findById(req.params.id).populate("user", "name");
-
-    if (!post) {
-      return res.status(404).json({ msg: "Post not found" });
-    }
+    if (!post) return res.status(404).json({ msg: "Not found" });
 
     res.json(post);
-  } catch (error) {
-    console.error(error.message);
-    if (error.kind === "ObjectId") {
-      return res.status(404).json({ msg: "Post not found" });
-    }
+  } catch (err) {
     res.status(500).send("Server error");
   }
 });
 
-// @route   POST api/posts
-// @desc    Create a post
+/* ================================
+   CREATE POST
+================================ */
 app.post(
   "/api/posts",
-  [
-    auth,
-    check("title", "Title is required").not().isEmpty(),
-    check("body", "Body is required").not().isEmpty(),
-  ],
+  [auth, check("title").notEmpty(), check("body").notEmpty()],
   async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) {
+    if (!errors.isEmpty())
       return res.status(400).json({ errors: errors.array() });
-    }
 
     try {
-      const { title, body } = req.body;
-
-      const newPost = new Post({
+      const post = new Post({
         user: req.user.id,
-        title,
-        body,
+        title: req.body.title,
+        body: req.body.body,
       });
-
-      const post = await newPost.save();
-      await post.populate("user", "name");
-
-      res.json(post);
-    } catch (error) {
-      console.error(error.message);
-      res.status(500).send("Server error");
-    }
-  }
-);
-
-// @route   PUT api/posts/:id
-// @desc    Update a post
-app.put(
-  "/api/posts/:id",
-  [
-    auth,
-    check("title", "Title is required").not().isEmpty(),
-    check("body", "Body is required").not().isEmpty(),
-  ],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    try {
-      const { title, body } = req.body;
-      const post = await Post.findById(req.params.id);
-
-      if (!post) {
-        return res.status(404).json({ msg: "Post not found" });
-      }
-
-      if (post.user.toString() !== req.user.id) {
-        return res.status(401).json({ msg: "User not authorized" });
-      }
-
-      post.title = title;
-      post.body = body;
 
       await post.save();
       await post.populate("user", "name");
 
       res.json(post);
-    } catch (error) {
-      console.error(error.message);
-      if (error.kind === "ObjectId") {
-        return res.status(404).json({ msg: "Post not found" });
-      }
+    } catch (err) {
       res.status(500).send("Server error");
     }
   }
 );
 
-// @route   DELETE api/posts/:id
-// @desc    Delete a post
+/* ================================
+   UPDATE POST
+================================ */
+app.put(
+  "/api/posts/:id",
+  [auth, check("title").notEmpty(), check("body").notEmpty()],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty())
+      return res.status(400).json({ errors: errors.array() });
+
+    try {
+      const post = await Post.findById(req.params.id);
+      if (!post) return res.status(404).json({ msg: "Not found" });
+
+      if (post.user.toString() !== req.user.id)
+        return res.status(401).json({ msg: "Unauthorized" });
+
+      post.title = req.body.title;
+      post.body = req.body.body;
+
+      await post.save();
+      await post.populate("user", "name");
+
+      res.json(post);
+    } catch (err) {
+      res.status(500).send("Server error");
+    }
+  }
+);
+
+/* ================================
+   DELETE POST
+================================ */
 app.delete("/api/posts/:id", auth, async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
+    if (!post) return res.status(404).json({ msg: "Not found" });
 
-    if (!post) {
-      return res.status(404).json({ msg: "Post not found" });
-    }
+    if (post.user.toString() !== req.user.id)
+      return res.status(401).json({ msg: "Unauthorized" });
 
-    if (post.user.toString() !== req.user.id) {
-      return res.status(401).json({ msg: "User not authorized" });
-    }
-
-    await Post.findByIdAndDelete(req.params.id);
-    res.json({ msg: "Post removed" });
-  } catch (error) {
-    console.error(error.message);
-    if (error.kind === "ObjectId") {
-      return res.status(404).json({ msg: "Post not found" });
-    }
+    await post.deleteOne();
+    res.json({ msg: "Deleted" });
+  } catch (err) {
     res.status(500).send("Server error");
   }
 });
 
-/**
- * ========================
- * START SERVER
- * ========================
- */
+/* ================================
+   COMMENTS ROUTES
+================================ */
+
+// GET comments for a post
+app.get("/api/posts/:postId/comments", async (req, res) => {
+  try {
+    const comments = await Comment.find({ post: req.params.postId })
+      .populate("user", "name")
+      .sort({ createdAt: -1 });
+
+    res.json(comments);
+  } catch (err) {
+    res.status(500).send("Server error");
+  }
+});
+
+// ADD comment
+app.post(
+  "/api/posts/:postId/comments",
+  [auth, check("text", "Comment text required").notEmpty()],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty())
+      return res.status(400).json({ errors: errors.array() });
+
+    try {
+      const post = await Post.findById(req.params.postId);
+      if (!post) return res.status(404).json({ msg: "Post not found" });
+
+      let comment = new Comment({
+        post: req.params.postId,
+        user: req.user.id,
+        text: req.body.text,
+      });
+
+      await comment.save();
+      await comment.populate("user", "name");
+
+      res.json(comment);
+    } catch (err) {
+      res.status(500).send("Server error");
+    }
+  }
+);
+
+// DELETE comment
+app.delete("/api/comments/:id", auth, async (req, res) => {
+  try {
+    const c = await Comment.findById(req.params.id);
+    if (!c) return res.status(404).json({ msg: "Not found" });
+
+    if (c.user.toString() !== req.user.id)
+      return res.status(401).json({ msg: "Unauthorized" });
+
+    await c.deleteOne();
+
+    res.json({ msg: "Deleted" });
+  } catch (err) {
+    res.status(500).send("Server error");
+  }
+});
+
+// LIKE comment
+app.post("/api/comments/:id/like", auth, async (req, res) => {
+  try {
+    const c = await Comment.findById(req.params.id);
+    if (!c) return res.status(404).json({ msg: "Not found" });
+
+    const uid = req.user.id;
+
+    if (c.likes.includes(uid)) {
+      c.likes = c.likes.filter((id) => id.toString() !== uid);
+    } else {
+      c.likes.push(uid);
+    }
+
+    await c.save();
+    res.json({ id: c._id, likes: c.likes });
+  } catch (err) {
+    res.status(500).send("Server error");
+  }
+});
+
+/* ================================
+   START SERVER
+================================ */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
